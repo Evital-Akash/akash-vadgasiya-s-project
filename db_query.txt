@@ -1,0 +1,182 @@
+create table Users(
+    id serial primary key,
+    u_name varchar(50) unique not null,
+    u_email varchar(100) unique not null,
+    u_password varchar(100) not null,
+    u_mobile varchar(50) not null,
+    u_otp varchar(100),
+    u_ipaddress varchar(100),
+    u_role varchar(100) default 'customer',
+    u_otpstatus ENUM('verified', 'not-verified') NOT NULL DEFAULT 'Pending',
+    u_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    u_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+);
+
+insert into Users (u_name,u_email,u_password,u_mobile) 
+values ('akash','akashvadgasiya1832@gmail.com','12345','9876543212'),
+       ('jainam','jainampanchal12@gmail.com','98765','9876543212');
+
+
+
+--------------------------------------------------------------------------------------------------------
+
+create table products(
+    id serial primary key,
+    p_name varchar(100) not null,
+    p_desc varchar(200) not null,
+    p_brand varchar(100) not null,
+    p_price varchar(100) not null,
+    p_qnt varchar(100) not null,
+    p_discount varchar(100) not null,
+    p_ipaddress varchar(100),
+    p_hsn_code varchar(100) not null,
+    p_gst_percentage int,
+    cat_id int references categories(id),
+    p_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    p_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+);
+
+
+insert into products (p_name,p_desc,p_brand,p_price,p_qnt) 
+values ('Headphone','Its very good and best quality','Boat','2999','3','1');
+
+
+------------------------------------------------------------------------------------------------------
+
+create table categories(
+    id serial primary key,
+    cat_name varchar(100) not null,
+    cat_ipaddress varchar(100),
+    cat_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    cat_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+insert into categories (name) values ('Clothing'),('Electorincs'),('Shoes');
+
+-------------------------------------`--------------------------------------------------------------------
+
+create table cart (
+    id serial primary key,
+    user_id int references users(id) on delete cascade,
+    product_id int references products(id) on delete cascade,
+    cart_quantity int not null,
+    cart_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    cart_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+------------------------------------------------------------------------------------------------------------
+
+create table cart_items(
+    id SERIAL PRIMARY KEY,
+    cart_id INT REFERENCES cart(id),
+    product_id INT REFERENCES products(id),
+    quantity INT NOT NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+---------------------------------------------------------------------------------------------------------
+
+
+create table orders(
+    id serial primary key,
+    user_id int references Users(id),
+    o_total numeric(10,2) not null,
+    o_status varchar(50) default 'pending',
+    o_address1 varchar(100) not null,
+    o_address2 varchar(100) not null,
+    o_city varchar(100) not null,
+    o_state varchar(100) not null,
+    o_country varchar(100) not null,
+    o_pincode varchar(100) not null,
+    o_latitude varchar(100) not null,
+    o_logitude varchar(100) not null,
+    o_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    o_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+----------------------------------------------------------------------------------------------------------
+
+create table order_items (
+    id serial primary key,
+    order_id int references orders(id),
+    product_id int references products(id),
+    oi_quantity int not null,
+    oi_price varchar(100) not null,
+    oi_ipaddress varchar(100),
+    oi_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    oi_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+);
+
+
+   oi_gst_percentage int,
+    oi_gst int,
+    oi_total varchar(100) not null,
+
+
+--------------------------------------------------------------------------------------------------
+
+create table shipping_address (
+    id serial primary key,
+    user_id int references users(id) on delete cascade,
+    sh_address1 text not null,
+    sh_address2 text not null,
+    sh_city varchar(100) not null,
+    sh_state varchar(100)not null,
+    sh_pincode varchar(20) not null,
+    sh_country varchar(100) not null,
+    sh_ipaddress varchar(100) not null,
+    sh_updated_ipaddress varchar(100) not null,
+    sh_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sh_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+---------------------------------------------------------------------------------------------------------
+
+create table payments(
+    id serail primay key,
+    order_id int references orders(id) on delete cascade,
+    sh_address_id int references shipping_address(id) on delete cascade,
+    pay_method varchar(100),
+    pay_status varchar(100) default 'pending',
+    pay_amount varchar(100) not null,
+    pay_transaction_id varchar(100) not null,
+    pay_ipaddress varchar(100) not null,
+    pay_updated_ipaddress varchar(100) not null,
+    pay_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    pay_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+)
+
+-----------------------------------------------------------------------------------------------------------
+
+
+
+create table reviews (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    r_rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+    r_comment TEXT,
+    r_img varchar(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+======================================== for updated_at ==========================
+
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.u_updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE TRIGGER set_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at();

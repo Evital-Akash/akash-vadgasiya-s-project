@@ -1,0 +1,161 @@
+const placeOrder = async (req, res) => {
+  const { user_id } = req.body;
+  console.log("id get - ", req.body);
+
+  if (!user_id) {
+    return res
+      .status(400)
+      .json({ message: "User is not logged in", success: false });
+  }
+  try {
+    const findCart = await conn.query(Quaries.find_users_cart, [user_id]);
+    if (findCart.rows.length === 0) {
+      return res.status(401).json({
+        message:
+          "No items are available in the cart. Please add products to the cart first.",
+      });
+    }
+
+    const cart_id = findCart.rows[0].id;
+    console.log("cart id :-", cart_id);
+
+    const cartItems = await conn.query(Quaries.get_all_items_from_cart, [
+      user_id,
+    ]);
+    console.log("cartItems:-", cartItems.rows[0].p_price);
+
+    if (cartItems.rows.length === 0)
+      return res
+        .status(401)
+        .json({ message: "No items found in the cart to order." });
+
+    let total = 0;
+    cartItems.rows.forEach((item) => {
+      total += item.cart_quantity * item.p_price;
+    });
+    console.log("total amt -", total);
+
+    const newOrder = await conn.query(Quaries.create_new_order, [
+      user_id,
+      total,
+    ]);
+
+    const orderID = newOrder.rows[0].id;
+
+    console.log("order id -", orderID);
+
+    for (const item of cartItems.rows) {
+      conn.query(Quaries.order_item_add, [
+        orderID,
+        item.product_id,
+        item.cart_quantity,
+        item.p_price,
+      ]);
+    }
+
+    await conn.query(Quaries.clear_cart, [cart_id]);
+
+    return res.status(200).json({
+      message: "Product added/updated in cart successfully.",
+      success: true,
+    });
+  } catch (err) {
+    res.status(401).send(err);
+  }
+};
+
+
+================================================================================================
+
+const placeOrder = async (req, res) => {
+  const { user_id } = req.body;
+  console.log("id get - ", req.body);
+
+  if (!user_id) {
+    return res.status(400).json(responseFormate(0, "User is not logged in"));
+  } else {
+    const findCart = await conn.query(Quaries.find_users_cart, [user_id]);
+    if (findCart.rows.length === 0) {
+      return res
+        .status(401)
+        .json(
+          responseFormate(
+            0,
+            "No items are available in the cart. Please add products to the cart first."
+          )
+        );
+    }
+
+    const cart_id = findCart.rows[0].id;
+    console.log("cart id :-", cart_id);
+
+    const cartItems = await conn.query(Quaries.get_all_items_from_cart, [
+      user_id,
+    ]);
+    console.log("cartItems:-", cartItems.rows[0]);
+
+    if (cartItems.rows.length === 0)
+      return res
+        .status(401)
+        .json(responseFormate(0, "No items found in the cart to order."));
+
+    let totalWithoutGST = 0;
+    let totalGST = 0;
+    let totalWithGST = 0;
+
+    cartItems.rows.forEach((product) => {
+      // const productPrice = product.p_price * product.cart_quantity;
+
+      const priceAfterDiscount =
+        product.p_price - product.p_price * (product.p_discount / 100);
+
+      const gstAmount = priceAfterDiscount * (product.p_gst_percentage / 100);
+
+      totalWithoutGST += priceAfterDiscount;
+      totalGST += gstAmount;
+    });
+
+    totalWithGST = totalWithoutGST + totalGST;
+    console.log("total with gst-", totalWithGST);
+    console.log("total gst - ", totalGST);
+    console.log("total without gst - ", totalWithoutGST);
+
+    // let total = 0;
+    // cartItems.rows.forEach((item) => {
+    //   total += item.cart_quantity * item.p_price;
+    // });
+    // console.log("total amt -", total);
+
+    // const ip = req.ip;
+
+    // const newOrder = await conn.query(Quaries.create_new_order, [
+    //   user_id,
+    //   // p_price,
+    //   ip,
+    //   o_discounts,
+    //   priceAfterDiscount,
+    //   totalGST,
+    //   totalWithGST,
+    // ]);
+
+    // const orderID = newOrder.rows[0].id;
+
+    // console.log("order id -", orderID);
+
+    // for (const item of cartItems.rows) {
+    //   conn.query(Quaries.order_item_add, [
+    //     orderID,
+    //     item.product_id,
+    //     item.cart_quantity,
+    //     item.p_price,
+    //   ]);
+    // }
+
+    // await conn.query(Quaries.clear_cart, [cart_id]);
+
+    // const result = await conn.query(Quaries.final_order, [orderID]);
+
+    // console.log("result-", result);
+
+
+516018
